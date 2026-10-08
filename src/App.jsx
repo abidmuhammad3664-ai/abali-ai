@@ -8,19 +8,20 @@ export default function App() {
     setLoading(true); setResult("");
     try {
       const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-      const models = ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-2.5-flash-lite"];
+      // Google ne khud ye models suggest kiye hain new users ke liye
+      const models = ["gemini-3.5-flash-lite", "gemini-2.0-flash", "gemini-flash-latest"];
       let lastError = "";
-      for (const model of models) {
+      for (const m of models) {
         try {
-          const res = await fetch(`https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`, {
+          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${apiKey}`, {
             method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ contents: [{ parts: [{ text: `Write a detailed SEO optimized article in English on: ${topic}` }] }] })
+            body: JSON.stringify({ contents: [{ parts: [{ text: `Write SEO article on: ${topic}` }] }] })
           });
           const data = await res.json();
           if(data.error) throw new Error(data.error.message);
-          const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-          if(text){ setResult(text); return; }
-        } catch(err){ lastError = err.message; }
+          const txt = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if(txt){ setResult(txt); return; }
+        } catch(e){ lastError = e.message; }
       }
       throw new Error(lastError);
     } catch(e){ setResult("ERROR: "+e.message); }
