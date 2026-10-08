@@ -4,19 +4,29 @@ export default function App() {
   const [result, setResult] = useState("");
   const [loading, setLoading] = useState(false);
   const generate = async () => {
-    if (!topic) return;
+    if (!topic.trim()) return;
     setLoading(true); setResult("");
     try {
       const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contents: [{ parts: [{ text: `Write SEO article on: ${topic}` }] }] })
-      });
-      const data = await res.json();
-      if(data.error) throw new Error(data.error.message);
-      setResult(data.candidates[0].content.parts[0].text);
+      if(!apiKey) throw new Error("API Key missing in Vercel env!");
+
+      const models = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-1.5-flash"];
+      let lastError = "";
+      for (const model of models) {
+        try {
+          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ contents: [{ parts: [{ text: `Write a detailed SEO optimized article in English on: ${topic}` }] }] })
+          });
+          const data = await res.json();
+          if(data.error) throw new Error(data.error.message);
+          const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if(text){ setResult(text); setLoading(false); return; }
+        } catch(err){ lastError = err.message; }
+      }
+      throw new Error(lastError || "All models busy, try again");
     } catch(e){ setResult("ERROR: "+e.message); }
-    setLoading(false);
+    finally{ setLoading(false); }
   };
   return (
     <div style={{ background: "black", minHeight: "100vh", color: "white", padding: "20px", textAlign: "center" }}>
