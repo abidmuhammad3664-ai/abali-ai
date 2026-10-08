@@ -1,53 +1,48 @@
 export default async function handler(req, res) {
-  // VERIFY
   if (req.method === 'GET') {
-    if (req.query['hub.verify_token'] === 'abali123') {
-      return res.status(200).send(req.query['hub.challenge']);
+    const mode = req.query['hub.mode'];
+    const token = req.query['hub.verify_token'];
+    const challenge = req.query['hub.challenge'];
+    if (mode === 'subscribe' && token === process.env.VERIFY_TOKEN) {
+      return res.status(200).send(challenge);
     }
     return res.status(403).send('Forbidden');
   }
-
-  // RECEIVE MESSAGE
   if (req.method === 'POST') {
     try {
-      const entry = req.body.entry?.[0];
-      const changes = entry?.changes?.[0];
-      const value = changes?.value;
-      const msg = value?.messages?.[0];
-
-      if (msg) {
-        const from = msg.from; // sender number
-        const text = msg.text?.body || "Hi";
-        const phoneNumberId = value.metadata.phone_number_id;
-
-        console.log(`Message from ${from}: ${text}`);
-
-        // --- AI REPLY LOGIC ---
-        let reply = `Assalam-o-Alaikum! Main Abali AI hun 🤖\n\nAapne kaha: "${text}"\n\nIN SHA ALLAH main jald hi aapke sawaalon ka jawab dunga!`;
-
-        // Simple smart replies
-        if (text.toLowerCase().includes('salam')) reply = "Walaikum As Salam! Kaise madad kar sakta hun?";
-        if (text.toLowerCase().includes('price') || text.toLowerCase().includes('qimat')) reply = "Abali ki qimat ke liye hamare catalog dekhen ya 'price list' likhen!";
-        if (text.toLowerCase().includes('order')) reply = "Order ke liye apna naam, address aur product likh kar bhejen!";
-
-        // SEND BACK TO WHATSAPP
-        await fetch(`https://graph.facebook.com/v20.0/${phoneNumberId}/messages`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${process.env.WHATSAPP_TOKEN}`,
-            'Content-Type': 'application/json'
-          },
+      const value = req.body.entry?.[0]?.changes?.[0]?.value;
+      if (!value?.messages) return res.status(200).send('No message');
+      const message = value.messages[0];
+      const from = message.from;
+      const text = message.text?.body || "";
+      const phoneNumberId = value.metadata.phone_number_id;
+      let reply = "";
+      try {
+        const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${process.env.GROQ_API_KEY}`, "Content-Type": "application/json" },
           body: JSON.stringify({
-            messaging_product: 'whatsapp',
-            to: from,
-            text: { body: reply }
+            model: "llama-3.1-8b-instant",
+            messages: [
+              { role: "system", content: "You are Abali AI 360, helpful Islamic AI assistant from Pakistan. Reply in same language as user. Be friendly, concise. Use IN SHA ALLAH." },
+              { role: "user", content: text }
+            ],
+            temperature: 0.7, max_tokens: 400
           })
         });
+        const data = await groqRes.json();
+        reply = data.choices?.[0]?.message?.content || "Walaikum As Salam! Kaise madad kar sakta hun?";
+      } catch (e) {
+        reply = `Assalam-o-Alaikum! Main Abali AI hun 🤖\n\nAapne kaha: "${text}"\n\nIN SHA ALLAH main jald jawab dunga!`;
       }
-      return res.status(200).send('EVENT_RECEIVED');
-    } catch (e) {
-      console.error(e);
-      return res.status(200).send('EVENT_RECEIVED');
+      await fetch(`https://graph.facebook.com/v20.0/${phoneNumberId}/messages`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${process.env.WHATSAPP_TOKEN}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ messaging_product: "whatsapp", to: from, text: { body: reply } })
+      });
+      return res.status(200).json({ success: true });
+    } catch (error) {
+      return res.status(200).send("OK");
     }
   }
 }
