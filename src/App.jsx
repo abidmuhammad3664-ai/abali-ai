@@ -8,23 +8,21 @@ export default function App() {
     setLoading(true); setResult("");
     try {
       const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-      if(!apiKey) throw new Error("API Key missing in Vercel env!");
-
-      const models = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-1.5-flash"];
+      const models = ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-2.5-flash-lite"];
       let lastError = "";
       for (const model of models) {
         try {
-          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+          const res = await fetch(`https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`, {
             method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ contents: [{ parts: [{ text: `Write a detailed SEO optimized article in English on: ${topic}` }] }] })
           });
           const data = await res.json();
           if(data.error) throw new Error(data.error.message);
           const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-          if(text){ setResult(text); setLoading(false); return; }
+          if(text){ setResult(text); return; }
         } catch(err){ lastError = err.message; }
       }
-      throw new Error(lastError || "All models busy, try again");
+      throw new Error(lastError);
     } catch(e){ setResult("ERROR: "+e.message); }
     finally{ setLoading(false); }
   };
