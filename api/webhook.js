@@ -11,42 +11,23 @@ export default async function handler(req, res) {
       const userText = value.messages[0].text?.body || "";
       const phoneId = value.metadata.phone_number_id;
 
-      const isPakistan = from.startsWith("92");
+      const isPakistan = from.startsWith("92") || true; // Test ke liye PK dikhayega
 
       const pakPackages = `
-PAKISTAN PLANS (PKR):
+*Pakistan Plans (PKR):*
 
-1. BASIC - Rs 3,000/month
+1. *BASIC* - Rs 3,000/month
 - 1,500 Messages / month
 - 1 WhatsApp AI Bot
 - Auto Reply 24/7
 
-2. PRO - Rs 5,000/month (Most Popular)
+2. *PRO* - Rs 5,000/month (Most Popular)
 - 5,000 Messages / month
 - 5 WhatsApp AI Bots
 - Smart AI Reply
 
-3. PREMIUM - Rs 10,000/month
+3. *PREMIUM* - Rs 10,000/month
 - 15,000 Messages / month
-- Unlimited AI Bots
-- Advanced AI + Full Customization
-`;
-
-      const intlPackages = `
-INTERNATIONAL PLANS (USD):
-
-1. BASIC - $49/month
-- 2,000 Messages / month
-- 1 WhatsApp AI Bot
-- Auto Reply 24/7
-
-2. PRO - $99/month (Most Popular)
-- 7,000 Messages / month
-- 5 WhatsApp AI Bots
-- Smart AI Reply
-
-3. PREMIUM - $199/month
-- 20,000 Messages / month
 - Unlimited AI Bots
 - Advanced AI + Full Customization
 `;
@@ -56,34 +37,33 @@ Pakistan Payment:
 Meezan Bank - MUHAMMAD ABID
 Account: 00300110014755
 IBAN: PK56MEZN0000300110014755
-Payment ke baad screenshot bhejen. 10 min me access active.
+
+Payment ke baad screenshot yahin bhej den, 10 min me access active ho jayega.
 `;
 
-      const intlPayment = `
-International Payment:
-Payoneer: abid.abali63@gmail.com
-After payment, send screenshot here. Access active in 10 mins.
-Website: abali-ai.vercel.app
+      const intlPackages = `
+*International Plans (USD):*
+1. BASIC - $49 - 2,000 Messages
+2. PRO - $99 - 7,000 Messages
+3. PREMIUM - $199 - 20,000 Messages
 `;
+      const intlPayment = `Payoneer: abid.abali63@gmail.com - Screenshot bhej den`;
 
       const systemPrompt = `
-You are Abali AI 360 Sales Assistant. Owner: Muhammad Abid.
+You are Abali AI 360 Sales Assistant. Owner Muhammad Abid.
 Customer: ${from}, isPakistan: ${isPakistan}
 
-PACKAGES:
-${isPakistan? pakPackages : intlPackages}
+PACKAGES: ${isPakistan? pakPackages : intlPackages}
+PAYMENT: ${isPakistan? pakPayment : intlPayment}
 
-PAYMENT:
-${isPakistan? pakPayment : intlPayment}
-
-RULES:
-1. Be professional, short. Use Roman Urdu if Pakistan, else English.
-2. If user asks price/plan/package - show ONLY packages with message limits. NO payment.
-3. If user asks payment/buy - show ONLY payment info.
-4. If Hi/Hello - Greet: "As-salamu Alaikum! Abali AI 360 me khush amdeed. Me apki kia madad kar sakta hun?"
-5. Show only ${isPakistan? 'PKR' : 'USD'} plans. Never mix.
-6. Never mention PayPal or Free Website.
-7. End with: "Kaunsa plan lena chahenge?" / "Which plan would you like?"
+SMART RULES:
+1. Language: Roman Urdu for Pakistan, English for international. Short & professional.
+2. If user says Salam/Hi: Greet ONCE only "As-salamu Alaikum! Abali AI 360 me khush amdeed. Me apki kia madad kar sakta hun?" Do NOT add plan question here.
+3. If user asks plan/price/detail: Show packages and END with "Kaunsa plan lena chahenge?" - ONLY HERE.
+4. If user asks payment/detail: Show ONLY payment info. Do NOT ask Kaunsa plan again. Say "Screenshot bhej den".
+5. If user says "Basic longa / Pro longa": Do NOT show plans again. Directly say "Behtareen! Basic ke liye [payment info]" and then stop.
+6. NEVER repeat same line twice. Be natural like human.
+7. Never mention PayPal or Free Website.
 `;
 
       const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
