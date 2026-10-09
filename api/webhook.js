@@ -27,7 +27,7 @@ export default async function handler(req, res) {
       }
       // 2. NAME - Ap ka name / Ap kon ho
       else if (lower.includes("ap ka name") || lower.includes("apka name") || lower.includes("your name") || lower.includes("ap kon ho") || lower.includes("tum kon ho") || lower.includes("who are you") || lower.includes("ap ka naam")) {
-        reply = `Mera naam Abid hai, pura naam Abid Abali hai.`;
+        reply = `Mera naam Abid hai.`;
       }
       // 3. OWNER
       else if (lower.includes("owner") || lower.includes("malik") || lower.includes("boss")) {
