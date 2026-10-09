@@ -18,7 +18,7 @@ export default async function handler(req, res) {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          model: "llama-3.1-8b-instant",
+          model: "llama3-8b-8192",
           messages: [
             { role: "system", content: "Tum Abali AI 360 ho. Malik Abid hai. Urdu Roman me jawab do. Agar access mange to bolo abali-ai.vercel.app pe jao." },
             { role: "user", content: userText }
