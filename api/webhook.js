@@ -13,56 +13,65 @@ export default async function handler(req, res) {
       const from = value.messages[0].from;
       const userText = value.messages[0].text?.body || "";
       const phoneId = value.metadata.phone_number_id;
+      const lower = userText.toLowerCase();
 
-      // FINAL COUNTRY LOCK - +1 (555) is always international
-      const isPakistan = from.startsWith("92")? true : false;
+      // COUNTRY LOCK
+      const isPakistan = from.startsWith("92");
 
-      let activePackages, activePaymentSingle, activePaymentAll, extraPrice, currency;
+      let plans, basicOnly, proOnly, premiumOnly, payment, extra, endQuestion;
 
       if (isPakistan) {
-        currency = "PKR";
-        activePackages = `*Abali AI 360 - Plans (PKR)*\n\nBASIC - Rs 3,000/month -> 1,500 Messages\nPRO - Rs 5,000/month (Most Popular) -> 5,000 Messages\nPREMIUM - Rs 10,000/month -> 15,000 Messages`;
-        activePaymentAll = `Payment: Meezan Bank - MUHAMMAD ABID, Account: 00300110014755, IBAN: PK56MEZN0000300110014755`;
-        extraPrice = "Extra 1000 messages Rs 800 me";
+        plans = `*Abali AI 360 - Plans*\n\nBASIC - Rs 3,000/month -> 1,500 Messages\nPRO - Rs 5,000/month (Most Popular) -> 5,000 Messages\nPREMIUM - Rs 10,000/month -> 15,000 Messages`;
+        basicOnly = `BASIC - Rs 3,000/month -> 1,500 Messages\nPayment: Meezan Bank - MUHAMMAD ABID, 00300110014755, IBAN: PK56MEZN0000300110014755`;
+        proOnly = `PRO - Rs 5,000/month (Most Popular) -> 5,000 Messages\nPayment: Meezan Bank - MUHAMMAD ABID, 00300110014755`;
+        premiumOnly = `PREMIUM - Rs 10,000/month -> 15,000 Messages\nPayment: Meezan Bank - MUHAMMAD ABID, 00300110014755`;
+        extra = `Agar 1,500 messages 1 month se pehle khatam ho gaye to Extra 1000 messages Rs 800 me mil jayenge ya aap PRO/PREMIUM pe upgrade kar sakte ho.`;
+        endQuestion = `Konsa plan active kar dun aapke liye?`;
       } else {
-        currency = "USD";
-        activePackages = `*Abali AI 360 - Plans (USD)*\n\nBASIC - $49/month -> 1,500 Messages\nPRO - $99/month (Most Popular) -> 5,000 Messages\nPREMIUM - $199/month -> 15,000 Messages`;
-        activePaymentAll = `Payment: Payoneer - abid.abali63@gmail.com`;
-        extraPrice = "Extra 1000 messages $15 me";
+        plans = `*Abali AI 360 - International Plans*\n\nBASIC - $49/month -> 1,500 Messages\nPRO - $99/month (Most Popular) -> 5,000 Messages\nPREMIUM - $199/month -> 15,000 Messages`;
+        basicOnly = `BASIC - $49/month -> 1,500 Messages\nPayment: Payoneer - abid.abali63@gmail.com`;
+        proOnly = `PRO - $99/month (Most Popular) -> 5,000 Messages\nPayment: Payoneer - abid.abali63@gmail.com`;
+        premiumOnly = `PREMIUM - $199/month -> 15,000 Messages\nPayment: Payoneer - abid.abali63@gmail.com`;
+        extra = `If your 1,500 messages finish before a month, you can get Extra 1000 messages for $15 or upgrade to PRO/PREMIUM instantly.`;
+        endQuestion = `Which plan should I activate for you?`;
       }
 
-      const systemPrompt = `
-You are Abali AI 360 Sales Agent. Name = Abid, Full Name = Abid Abali, Owner = Abid Abali.
-Customer Number: ${from} | Country Type: ${currency} | isPakistan=${isPakistan}
-User said: "${userText}"
+      // LANGUAGE DETECT
+      const isEnglish = /^[A-Za-z0-9\s?$.,!@]+$/.test(userText) && lower.match(/^(hi|hello|what|which|how|price|plan|basic|pro|premium)/);
+      let aiReply = "";
 
-YOU HAVE ONLY THIS DATA, NOTHING ELSE:
-${activePackages}
-${activePaymentAll}
-Extra: ${extraPrice}
+      // DIRECT CODE REPLY - AI KO BYPASS
+      if (lower.includes("1500") && (lower.includes("khatam") || lower.includes("finish") || lower.includes("extra") || lower.includes("limit"))) {
+        aiReply = extra + "\n\n" + endQuestion;
+      } else if (lower === "basic" || lower.includes("basic ki detail") || lower.includes("basic detail")) {
+        aiReply = basicOnly + "\n\n" + endQuestion;
+      } else if (lower === "pro" || lower.includes("pro ki detail")) {
+        aiReply = proOnly + "\n\n" + endQuestion;
+      } else if (lower === "premium" || lower.includes("premium ki detail")) {
+        aiReply = premiumOnly + "\n\n" + endQuestion;
+      } else if (lower.includes("plan") || lower.includes("price") || lower.includes("package") || lower.includes("kitne")) {
+        aiReply = plans + "\n\n" + endQuestion;
+      } else {
+        // BAAKI SAWALO KE LIYE AI - LEKIN ZUBAN LOCK KE SATH
+        const langInstruction = isPakistan
+         ? (isEnglish? "Reply ONLY in English. No Roman Urdu." : "Reply ONLY in Roman Urdu. No English mixing.")
+          : "Reply ONLY in English. No Roman Urdu, no Urdu. Pure English only.";
 
-RULES - FOLLOW 100%:
-1. Language: User English -> English only. Roman Urdu -> Roman Urdu only. Never mix.
-2. PLAN LIST: If user says "plan / whats your plan / price", show ONLY ${activePackages}. DO NOT show payment with plan list.
-3. SINGLE PLAN: If user says "Basic / Bacic / Pro / Premium", show ONLY that one plan detail + payment. Example: User says "Basic" -> Show "BASIC - ${isPakistan? 'Rs 3,000' : '$49'} -> 1500 Msgs + ${activePaymentAll} + Konsa plan active kar dun?" Do NOT show other 2 plans.
-4. LIMIT QUESTION: If user says "1500 khatam / limit / agar pehle khatam ho gaye", NEVER show plan list. Only say "${extraPrice} mil jayenge ya PRO/PREMIUM pe upgrade foran ho jata hai".
-5. NEVER EVER write Rs if currency is USD, and NEVER write $ if currency is PKR. Your currency is ${currency} only.
-6. Short reply 2-3 lines. End with "Konsa plan active kar dun?" (English: "Which plan should I activate for you?")
-`;
+        const systemPrompt = `You are Abali AI 360 Sales Agent. Name=Abid Abali, Owner=Abid Abali. Customer=${from}, Currency=${isPakistan?'PKR':'USD'}. User Language Rule: ${langInstruction}. Available Data: ${isPakistan? plans + ' + Meezan Bank' : plans + ' + Payoneer'}. User said: "${userText}". Rule: Never show Rs if USD customer, never show $ if PKR customer. Short 2-3 lines. End with "${endQuestion}"`;
 
-      const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${process.env.GROQ_API_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "openai/gpt-oss-20b",
-          messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userText }],
-          max_tokens: 300,
-          temperature: 0
-        })
-      });
-
-      const data = await groqRes.json();
-      let aiReply = data.choices?.[0]?.message?.content || activePackages;
+        const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${process.env.GROQ_API_KEY}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "openai/gpt-oss-20b",
+            messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userText }],
+            max_tokens: 250,
+            temperature: 0
+          })
+        });
+        const data = await groqRes.json();
+        aiReply = data.choices?.[0]?.message?.content || plans;
+      }
 
       await fetch(`https://graph.facebook.com/v20.0/${phoneId}/messages`, {
         method: "POST",
