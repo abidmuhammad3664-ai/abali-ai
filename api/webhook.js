@@ -18,9 +18,9 @@ export default async function handler(req, res) {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          model: "llama3-8b-8192",
+          model: "openai/gpt-oss-20b",
           messages: [
-            { role: "system", content: "Tum Abali AI 360 ho. Malik Abid hai. Urdu Roman me jawab do. Agar access mange to bolo abali-ai.vercel.app pe jao." },
+            { role: "system", content: "Tum Abali AI 360 ho. Malik Abid hai. Urdu Roman me short friendly jawab do. Agar access mange to bolo abali-ai.vercel.app pe jao." },
             { role: "user", content: userText }
           ],
           max_tokens: 400
@@ -29,10 +29,7 @@ export default async function handler(req, res) {
 
       const data = await groqRes.json();
       let aiReply = data.choices?.[0]?.message?.content;
-
-      if (!aiReply) {
-        aiReply = "Bhai Groq se jawab nahi aaya, Error: " + JSON.stringify(data).slice(0,200);
-      }
+      if (!aiReply) aiReply = "Error: " + JSON.stringify(data).slice(0,300);
 
       await fetch(`https://graph.facebook.com/v20.0/${phoneId}/messages`, {
         method: "POST",
@@ -48,7 +45,6 @@ export default async function handler(req, res) {
       });
       return res.status(200).send('OK');
     } catch(err){
-      console.log(err);
       return res.status(200).send('OK');
     }
   }
