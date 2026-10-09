@@ -16,64 +16,62 @@ export default async function handler(req, res) {
       const lower = userText.toLowerCase().trim();
 
       const isPakistan = from.startsWith("92");
-      const isUrdu = /[\u0600-\u06FF]/.test(userText);
-      const isEnglishWord = lower.match(/^(hi|hello|hey|other|another|payment|plan|price|what|basic|pro|premium)/);
 
       let reply = "";
 
-      // 1. GREETING LOCK - Hi pe sirf Hi
-      if (lower === "hi" || lower === "hello" || lower === "hey" || lower === "salam" || lower === "as-salamu alaikum") {
-        if (lower.includes("salam")) {
-          reply = isPakistan? "Wa Alaikum Salam! Abali AI 360 me khush amdeed." : "Wa Alaikum Salam! Welcome to Abali AI 360.";
-        } else {
-          reply = isPakistan &&!isEnglishWord? "Hi! Abali AI 360 me khush amdeed." : "Hi! Welcome to Abali AI 360. How can I help you?";
-        }
-        // Hi pe plan mat dikhao
-      }
-      else if (lower.includes("other") || lower.includes("another")) {
+      // 1. LIFETIME / MONTHLY - SAB SE PEHLE
+      if (lower.includes("life time") || lower.includes("lifetime") || lower.includes("life-time")) {
         reply = isPakistan
-         ? (isEnglishWord? "We accept Meezan Bank. If you need other method, tell me." : "Payment Meezan Bank ke zariye hoti hai, agar aur method chahiye to batao.")
-          : "We accept Payoneer: abid.abali63@gmail.com. Let me know if you need another method.";
+        ? `Nahi, ye lifetime nahi hai, ye monthly plans hain.\nBASIC - Rs 3,000/month -> 1,500 Msgs/month`
+          : `No, this is not lifetime, these are monthly plans.\nBASIC - $49/month -> 1,500 Msgs/month`;
       }
-      else if (lower === "basic" || lower === "bacic") {
-        reply = isPakistan
-         ? `BASIC - Rs 3,000/month -> 1,500 Messages\nPayment: Meezan Bank - MUHAMMAD ABID, 00300110014755`
-          : `BASIC - $49/month -> 1,500 Messages\nPayment: Payoneer - abid.abali63@gmail.com`;
+      // 2. NAME - Ap ka name / Ap kon ho
+      else if (lower.includes("ap ka name") || lower.includes("apka name") || lower.includes("your name") || lower.includes("ap kon ho") || lower.includes("tum kon ho") || lower.includes("who are you") || lower.includes("ap ka naam")) {
+        reply = `Mera naam Abid hai, pura naam Abid Abali hai.`;
       }
-      else if (lower === "pro") {
-        reply = isPakistan
-         ? `PRO - Rs 5,000/month -> 5,000 Messages\nPayment: Meezan Bank`
-          : `PRO - $99/month -> 5,000 Messages\nPayment: Payoneer`;
+      // 3. OWNER
+      else if (lower.includes("owner") || lower.includes("malik") || lower.includes("boss")) {
+        reply = `Mere malik / owner ka naam Abid Abali hai.`;
       }
-      else if (lower === "premium") {
-        reply = isPakistan
-         ? `PREMIUM - Rs 10,000/month -> 15,000 Messages\nPayment: Meezan Bank`
-          : `PREMIUM - $199/month -> 15,000 Messages\nPayment: Payoneer`;
+      // 4. GREETING
+      else if (lower === "hi" || lower === "hello" || lower === "hey" || lower === "salam") {
+        reply = lower.includes("salam")? `Wa Alaikum Salam!` : `Hi! Welcome to Abali AI 360.`;
       }
-      else if (lower.includes("khatam") || lower.includes("finish") || lower.includes("limit") || lower.includes("extra")) {
+      // 5. EXTRA / KHATAM
+      else if (lower.includes("khatam") || lower.includes("pehlay") || lower.includes("pehle") || lower.includes("extra")) {
         reply = isPakistan
-         ? `Extra 1000 messages Rs 800 me mil jayenge ya PRO/PREMIUM pe upgrade foran ho jata hai.`
-          : `Extra 1000 messages for $15 or upgrade to PRO/PREMIUM instantly.`;
+        ? `Agar 1 month se pehle msg khatam ho gaye to Extra 1000 messages Rs 800/month me mil jayenge ya PRO/PREMIUM pe upgrade foran ho jata hai.`
+          : `If messages finish before 1 month, extra 1000 messages for $15/month or upgrade to PRO/PREMIUM instantly.`;
       }
-      else if (lower.includes("plan") || lower.includes("price") || lower.includes("package")) {
+      // 6. SINGLE PLAN
+      else if (lower.includes("basic")) {
         reply = isPakistan
-         ? `BASIC - Rs 3,000 -> 1,500 Msgs\nPRO - Rs 5,000 -> 5,000 Msgs\nPREMIUM - Rs 10,000 -> 15,000 Msgs`
-          : `BASIC - $49 -> 1,500 Msgs\nPRO - $99 -> 5,000 Msgs\nPREMIUM - $199 -> 15,000 Msgs`;
+        ? `BASIC - Rs 3,000/month -> 1,500 Messages/month\nPayment: Meezan Bank - MUHAMMAD ABID, 00300110014755`
+          : `BASIC - $49/month -> 1,500 Messages/month\nPayment: Payoneer - abid.abali63@gmail.com`;
+      }
+      else if (lower.includes("pro")) {
+        reply = isPakistan
+        ? `PRO - Rs 5,000/month (Most Popular) -> 5,000 Messages/month\nPayment: Meezan Bank`
+          : `PRO - $99/month (Most Popular) -> 5,000 Messages/month\nPayment: Payoneer`;
+      }
+      else if (lower.includes("premium")) {
+        reply = isPakistan
+        ? `PREMIUM - Rs 10,000/month -> 15,000 Messages/month\nPayment: Meezan Bank`
+          : `PREMIUM - $199/month -> 15,000 Messages/month\nPayment: Payoneer`;
+      }
+      // 7. ALL PLANS
+      else if (lower.includes("plan") || lower.includes("price") || lower.includes("kitne")) {
+        reply = isPakistan
+        ? `BASIC - Rs 3,000/month -> 1,500 Msgs/month\nPRO - Rs 5,000/month -> 5,000 Msgs/month\nPREMIUM - Rs 10,000/month -> 15,000 Msgs/month`
+          : `BASIC - $49/month -> 1,500 Msgs/month\nPRO - $99/month -> 5,000 Msgs/month\nPREMIUM - $199/month -> 15,000 Msgs/month`;
       }
       else {
-        // Default - zuban ke hisab se chota jawab
-        if (isUrdu) reply = "Ji hukum? Konsa plan chahiye aapko?";
-        else if (isPakistan &&!isEnglishWord) reply = "Ji bataiye, konsa plan chahiye?";
-        else reply = "Hello! How can I help you today?";
+        reply = `Ji bataiye, konsa plan chahiye?`;
       }
 
-      // Last line - zuban ke hisab se
-      if (!lower.includes("hi") &&!lower.includes("hello") &&!lower.includes("hey")) {
-        if (isPakistan &&!isEnglishWord &&!isUrdu) {
-          reply += `\n\nKonsa plan active kar dun?`;
-        } else if (isEnglishWord ||!isPakistan) {
-          reply += `\n\nWhich plan should I activate for you?`;
-        }
+      // End question add - Name/Owner pe nahi
+      if (!lower.includes("name") &&!lower.includes("naam") &&!lower.includes("kon ho") &&!lower.includes("owner") &&!lower.includes("malik") &&!lower.includes("who")) {
+        reply += `\n\nKonsa plan active kar dun?`;
       }
 
       await fetch(`https://graph.facebook.com/v20.0/${phoneId}/messages`, {
